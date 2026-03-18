@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}IPL 2026 - Dashboard{% endblock %}
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-section text-center mb-4">
+    <h1 class="display-5 fw-bold mb-2">
+        <i class="bi bi-trophy-fill text-warning"></i> IPL 2026 AI Dashboard
+    </h1>
+    <p class="lead text-muted">AI-Powered Match Predictions, Player Analytics & Live Dashboards</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-primary mb-2"><i class="bi bi-calendar-event fs-2"></i></div>
+                <h2 class="fw-bold mb-0">{{ total_matches }}</h2>
+                <small class="text-muted">Total Matches</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-success mb-2"><i class="bi bi-check-circle-fill fs-2"></i></div>
+                <h2 class="fw-bold mb-0">{{ completed_count }}</h2>
+                <small class="text-muted">Completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-info mb-2"><i class="bi bi-clock-fill fs-2"></i></div>
+                <h2 class="fw-bold mb-0">{{ upcoming_count }}</h2>
+                <small class="text-muted">Upcoming</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card border-0 h-100">
+            <div class="card-body text-center">
+                <div class="stat-icon text-warning mb-2"><i class="bi bi-people-fill fs-2"></i></div>
+                <h2 class="fw-bold mb-0">{{ teams|length }}</h2>
+                <small class="text-muted">Teams</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Points Table -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-table me-2 text-primary"></i>Points Table</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th class="ps-3">#</th>
+                                <th>Team</th>
+                                <th class="text-center">P</th>
+                                <th class="text-center">W</th>
+                                <th class="text-center">L</th>
+                                <th class="text-center">Pts</th>
+                                <th class="text-center">NRR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in points_table %}
+                            <tr>
+                                <td class="ps-3 fw-bold">{{ loop.index }}</td>
+                                <td>
+                                    <a href="/team/{{ row.team.id }}" class="text-decoration-none d-flex align-items-center">
+                                        <span class="team-badge me-2" style="background:{{ row.team.color }};">{{ row.team.logo_emoji }}</span>
+                                        <span class="fw-semibold">{{ row.team.short_name }}</span>
+                                    </a>
+                                </td>
+                                <td class="text-center">{{ row.played }}</td>
+                                <td class="text-center text-success fw-bold">{{ row.won }}</td>
+                                <td class="text-center text-danger">{{ row.lost }}</td>
+                                <td class="text-center"><span class="badge bg-primary">{{ row.points }}</span></td>
+                                <td class="text-center {% if row.nrr >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ '%+.3f'|format(row.nrr) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h6 class="mb-0"><i class="bi bi-stars text-warning me-2"></i>Top Run Scorers (Career)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for p in top_batsmen %}
+                            <a href="/player/{{ p.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-semibold">{{ p.name }}</span>
+                                    <small class="text-muted d-block">{{ p.team.short_name }} | Avg: {{ p.batting_avg }}</small>
+                                </div>
+                                <span class="badge bg-warning text-dark">{{ p.runs_scored }} runs</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0">
+                        <h6 class="mb-0"><i class="bi bi-bullseye text-danger me-2"></i>Top Wicket Takers (Career)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for p in top_bowlers %}
+                            <a href="/player/{{ p.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-semibold">{{ p.name }}</span>
+                                    <small class="text-muted d-block">{{ p.team.short_name }} | Eco: {{ p.economy_rate }}</small>
+                                </div>
+                                <span class="badge bg-danger">{{ p.wickets_taken }} wkts</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Upcoming Matches -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-fill me-2 text-info"></i>Upcoming</h5>
+                <a href="/schedule?status=upcoming" class="btn btn-sm btn-outline-info">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% for match in upcoming %}
+                <a href="/match/{{ match.id }}" class="match-card d-block text-decoration-none p-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-info bg-opacity-25 text-info">Match {{ match.match_number }}</span>
+                        <small class="text-muted">{{ match.date|datefmt }}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-center flex-fill">
+                            <span class="team-badge" style="background:{{ match.team1.color }};">{{ match.team1.logo_emoji }}</span>
+                            <div class="fw-bold small mt-1">{{ match.team1.short_name }}</div>
+                        </div>
+                        <div class="text-muted fw-bold px-3">VS</div>
+                        <div class="text-center flex-fill">
+                            <span class="team-badge" style="background:{{ match.team2.color }};">{{ match.team2.logo_emoji }}</span>
+                            <div class="fw-bold small mt-1">{{ match.team2.short_name }}</div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ match.venue }}</small>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Results -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-check-circle-fill me-2 text-success"></i>Recent Results</h5>
+                <a href="/schedule?status=completed" class="btn btn-sm btn-outline-success">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% for match in completed %}
+                <a href="/match/{{ match.id }}" class="match-card d-block text-decoration-none p-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-success bg-opacity-25 text-success">Match {{ match.match_number }}</span>
+                        <small class="text-muted">{{ match.date|datefmt }}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-center flex-fill">
+                            <span class="team-badge {% if match.winner_id == match.team1_id %}winner-glow{% endif %}" style="background:{{ match.team1.color }};">{{ match.team1.logo_emoji }}</span>
+                            <div class="fw-bold small mt-1">{{ match.team1.short_name }}</div>
+                            <div class="small text-muted">{{ match.team1_score }}</div>
+                        </div>
+                        <div class="text-muted fw-bold px-3">VS</div>
+                        <div class="text-center flex-fill">
+                            <span class="team-badge {% if match.winner_id == match.team2_id %}winner-glow{% endif %}" style="background:{{ match.team2.color }};">{{ match.team2.logo_emoji }}</span>
+                            <div class="fw-bold small mt-1">{{ match.team2.short_name }}</div>
+                            <div class="small text-muted">{{ match.team2_score }}</div>
+                        </div>
+                    </div>
+                    {% if match.winner %}
+                    <div class="text-center mt-2">
+                        <small class="text-success fw-semibold">{{ match.winner.short_name }} won by {{ match.win_margin }}</small>
+                    </div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teams Grid -->
+<div class="mt-5">
+    <h4 class="mb-3"><i class="bi bi-shield-fill me-2 text-primary"></i>Teams</h4>
+    <div class="row g-3">
+        {% for team in teams %}
+        <div class="col-6 col-md-4 col-lg-2">
+            <a href="/team/{{ team.id }}" class="card team-card border-0 shadow-sm h-100 text-decoration-none">
+                <div class="card-body text-center p-3">
+                    <div class="team-logo mb-2" style="background: {{ team.color }}20; border: 2px solid {{ team.color }};">
+                        <span style="font-size: 2rem;">{{ team.logo_emoji }}</span>
+                    </div>
+                    <h6 class="fw-bold mb-1">{{ team.short_name }}</h6>
+                    <small class="text-muted">{{ team.name }}</small>
+                    <div class="mt-2">
+                        <span class="badge bg-warning text-dark">{{ team.titles_won }} titles</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

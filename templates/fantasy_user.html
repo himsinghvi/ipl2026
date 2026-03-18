@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} - Fantasy League | IPL 2026{% endblock %}
+
+{% block content %}
+<div class="fantasy-page">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="{{ url_for('fantasy') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+        <div>
+            <h2 class="mb-0">
+                <span class="me-2">{{ user.avatar_emoji }}</span>{{ user.username }}
+            </h2>
+            <small class="text-muted">Member since {{ user.created_at.strftime('%d %b %Y') if user.created_at else 'N/A' }}</small>
+        </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 stat-card text-center p-3">
+                <div class="fs-2 fw-bold fantasy-points">{{ user.total_points }}</div>
+                <small class="text-muted">Total Points</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 stat-card text-center p-3">
+                <div class="fs-2 fw-bold">{{ user.matches_played }}</div>
+                <small class="text-muted">Matches Played</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 stat-card text-center p-3">
+                <div class="fs-2 fw-bold">{{ (user.total_points / user.matches_played)|round(1) if user.matches_played > 0 else 0 }}</div>
+                <small class="text-muted">Avg Points/Match</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 stat-card text-center p-3">
+                {% set best = user_teams|sort(attribute='total_points', reverse=true)|first if user_teams else none %}
+                <div class="fs-2 fw-bold text-success">{{ best.total_points if best else 0 }}</div>
+                <small class="text-muted">Best Score</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match-wise Breakdown -->
+    <div class="card border-0">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-info me-2"></i>Match History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Match</th>
+                            <th>Teams</th>
+                            <th>Captain</th>
+                            <th>Vice Captain</th>
+                            <th class="text-end pe-4">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ft in user_teams %}
+                        <tr>
+                            <td class="ps-4">
+                                <a href="{{ url_for('fantasy_match', match_id=ft.match.id) }}" class="text-decoration-none">
+                                    #{{ ft.match.match_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="team-badge me-1" style="background:{{ ft.match.team1.color }}20; color:{{ ft.match.team1.color }}">{{ ft.match.team1.logo_emoji }}</span>
+                                {{ ft.match.team1.short_name }}
+                                <span class="text-muted mx-1">vs</span>
+                                <span class="team-badge me-1" style="background:{{ ft.match.team2.color }}20; color:{{ ft.match.team2.color }}">{{ ft.match.team2.logo_emoji }}</span>
+                                {{ ft.match.team2.short_name }}
+                            </td>
+                            <td>
+                                {% for p in ft.players if p.is_captain %}
+                                <span class="badge bg-warning text-dark me-1">C</span>{{ p.player.name }}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for p in ft.players if p.is_vice_captain %}
+                                <span class="badge bg-info text-dark me-1">VC</span>{{ p.player.name }}
+                                {% endfor %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <span class="fw-bold fantasy-points">{{ ft.total_points }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if user_teams %}
+    <!-- Points Distribution Chart -->
+    <div class="card border-0 mt-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0"><i class="bi bi-graph-up me-2 text-success"></i>Points Trend</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="pointsChart" height="100"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if user_teams %}
+(function() {
+    const sorted = {{ user_teams|map(attribute='total_points')|list|tojson }};
+    const labels = {{ user_teams|map(attribute='match')|map(attribute='match_number')|list|tojson }};
+
+    const ctx = document.getElementById('pointsChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.map(n => '#' + n),
+                datasets: [{
+                    label: 'Fantasy Points',
+                    data: sorted,
+                    borderColor: '#4e8cff',
+                    backgroundColor: 'rgba(78,140,255,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4e8cff',
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+})();
+{% endif %}
+</script>
+{% endblock %}
