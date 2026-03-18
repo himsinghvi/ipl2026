@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - Player Profile{% endblock %}
+{% block content %}
+
+<!-- Player Header -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="card-body py-4" style="background: {{ team.color }}15;">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="player-avatar" style="border-color: {{ team.color }};">
+                    <i class="bi bi-person-fill" style="font-size: 3rem; color: {{ team.color }};"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="fw-bold mb-1">{{ player.name }}</h2>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <a href="/team/{{ team.id }}" class="text-decoration-none">
+                        <span class="team-badge" style="background:{{ team.color }};">{{ team.logo_emoji }}</span>
+                        <span class="fw-semibold">{{ team.name }}</span>
+                    </a>
+                    {% if player.is_overseas %}
+                    <span class="badge bg-info">Overseas</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-primary px-3 py-2">{{ player.role }}</span>
+                    <span class="badge bg-secondary px-3 py-2">{{ player.batting_style }} bat</span>
+                    {% if player.bowling_style and player.bowling_style != '-' %}
+                    <span class="badge bg-secondary px-3 py-2">{{ player.bowling_style }}</span>
+                    {% endif %}
+                    <span class="badge bg-body-secondary px-3 py-2">{{ player.nationality }}</span>
+                </div>
+            </div>
+            <div class="col-auto text-center">
+                <div class="form-circle" style="border-color: {% if player.form_rating > 75 %}#198754{% elif player.form_rating > 55 %}#ffc107{% else %}#dc3545{% endif %};">
+                    <h3 class="mb-0 fw-bold">{{ player.form_rating|int }}</h3>
+                    <small class="text-muted">Form</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overall Ratings -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-star-fill text-warning fs-3"></i>
+                <h6 class="text-muted mt-2 mb-1">Overall Rating</h6>
+                <h2 class="fw-bold mb-0">{{ analysis.overall_rating }}<small class="text-muted">/100</small></h2>
+                <div class="progress mt-2" style="height: 8px;">
+                    <div class="progress-bar bg-warning" style="width: {{ analysis.overall_rating }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-lightning-fill text-primary fs-3"></i>
+                <h6 class="text-muted mt-2 mb-1">Batting Rating</h6>
+                <h2 class="fw-bold mb-0">{{ analysis.batting_rating }}<small class="text-muted">/100</small></h2>
+                <div class="progress mt-2" style="height: 8px;">
+                    <div class="progress-bar bg-primary" style="width: {{ analysis.batting_rating }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bullseye text-danger fs-3"></i>
+                <h6 class="text-muted mt-2 mb-1">Bowling Rating</h6>
+                <h2 class="fw-bold mb-0">{{ analysis.bowling_rating }}<small class="text-muted">/100</small></h2>
+                <div class="progress mt-2" style="height: 8px;">
+                    <div class="progress-bar bg-danger" style="width: {{ analysis.bowling_rating }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Strengths & Weaknesses -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-shield-fill-check text-success me-2"></i>Strengths</h5>
+            </div>
+            <div class="card-body">
+                {% for s in analysis.strengths %}
+                <div class="d-flex align-items-start mb-2">
+                    <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                    <span>{{ s }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Areas of Improvement</h5>
+            </div>
+            <div class="card-body">
+                {% for w in analysis.weaknesses %}
+                <div class="d-flex align-items-start mb-2">
+                    <i class="bi bi-exclamation-circle-fill text-warning me-2 mt-1"></i>
+                    <span>{{ w }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Career Batting Stats -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Career Batting Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.matches_played }}</h4>
+                        <small class="text-muted">Matches</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-warning">{{ player.runs_scored }}</h4>
+                        <small class="text-muted">Runs</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.batting_avg }}</h4>
+                        <small class="text-muted">Average</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-info">{{ player.strike_rate }}</h4>
+                        <small class="text-muted">Strike Rate</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-success">{{ player.fifties }}</h4>
+                        <small class="text-muted">50s</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-danger">{{ player.hundreds }}</h4>
+                        <small class="text-muted">100s</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.fours }}</h4>
+                        <small class="text-muted">Fours</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.sixes }}</h4>
+                        <small class="text-muted">Sixes</small>
+                    </div>
+                </div>
+                <canvas id="battingRadar" class="mt-3" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Career Bowling Stats -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-bullseye text-danger me-2"></i>Career Bowling Stats</h5>
+            </div>
+            <div class="card-body">
+                {% if player.wickets_taken > 0 %}
+                <div class="row g-3">
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-danger">{{ player.wickets_taken }}</h4>
+                        <small class="text-muted">Wickets</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.bowling_avg }}</h4>
+                        <small class="text-muted">Average</small>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="fw-bold mb-0 text-info">{{ player.economy_rate }}</h4>
+                        <small class="text-muted">Economy</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.best_bowling }}</h4>
+                        <small class="text-muted">Best Bowling</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="fw-bold mb-0">{{ player.runs_conceded }}</h4>
+                        <small class="text-muted">Runs Conceded</small>
+                    </div>
+                </div>
+                <canvas id="bowlingRadar" class="mt-3" height="200"></canvas>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-dash-circle fs-1"></i>
+                    <p class="mt-2">No bowling stats available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Match-by-match performances -->
+{% if batting_scores %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2 text-success"></i>IPL 2026 Batting Performances</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="matchPerformance" height="80"></canvas>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Batting radar chart
+    const batRadar = document.getElementById('battingRadar');
+    if (batRadar) {
+        new Chart(batRadar, {
+            type: 'radar',
+            data: {
+                labels: ['Average', 'Strike Rate', 'Consistency', 'Power', 'Form', 'Experience'],
+                datasets: [{
+                    label: '{{ player.name }}',
+                    data: [
+                        Math.min(100, {{ player.batting_avg }} / 45 * 100),
+                        Math.min(100, {{ player.strike_rate }} / 180 * 100),
+                        Math.min(100, ({{ player.fifties }} + {{ player.hundreds }} * 2) / 30 * 100),
+                        Math.min(100, {{ player.sixes }} / 150 * 100),
+                        {{ player.form_rating }},
+                        Math.min(100, {{ player.matches_played }} / 200 * 100)
+                    ],
+                    backgroundColor: '{{ team.color }}40',
+                    borderColor: '{{ team.color }}',
+                    borderWidth: 2,
+                    pointBackgroundColor: '{{ team.color }}',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#adb5bd' } } },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#33373a' },
+                        pointLabels: { color: '#adb5bd' },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    {% if player.wickets_taken > 0 %}
+    // Bowling radar chart
+    const bowlRadar = document.getElementById('bowlingRadar');
+    if (bowlRadar) {
+        new Chart(bowlRadar, {
+            type: 'radar',
+            data: {
+                labels: ['Wicket-taking', 'Economy', 'Average', 'Form', 'Experience'],
+                datasets: [{
+                    label: '{{ player.name }}',
+                    data: [
+                        Math.min(100, {{ player.wickets_taken }} / 150 * 100),
+                        Math.min(100, Math.max(0, (10 - {{ player.economy_rate }}) / 4 * 100)),
+                        Math.min(100, Math.max(0, (35 - {{ player.bowling_avg }}) / 35 * 100)),
+                        {{ player.form_rating }},
+                        Math.min(100, {{ player.matches_played }} / 200 * 100)
+                    ],
+                    backgroundColor: '#dc354540',
+                    borderColor: '#dc3545',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#dc3545',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#adb5bd' } } },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#33373a' },
+                        pointLabels: { color: '#adb5bd' },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    // Match-by-match batting performance
+    const matchPerf = document.getElementById('matchPerformance');
+    if (matchPerf) {
+        const runs = [{% for sc in batting_scores %}{{ sc.runs }},{% endfor %}];
+        const labels = runs.map((_, i) => 'Inn ' + (i + 1));
+        const bgColors = runs.map(r => r >= 50 ? '#ffc10799' : r >= 30 ? '#0dcaf099' : '#6c757d99');
+
+        new Chart(matchPerf, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Runs',
+                    data: runs,
+                    backgroundColor: bgColors,
+                    borderRadius: 4,
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#33373a' }, ticks: { color: '#adb5bd' } },
+                    x: { grid: { display: false }, ticks: { color: '#adb5bd' } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

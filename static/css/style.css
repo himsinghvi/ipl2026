@@ -1,0 +1,456 @@
+:root {
+    --bg-primary: #0f1117;
+    --bg-card: #1a1d26;
+    --bg-hover: #252830;
+    --accent-blue: #4e8cff;
+    --accent-gold: #fbbf24;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-primary);
+    min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+    background: rgba(15, 17, 23, 0.95) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0.75rem 1rem;
+}
+
+.navbar-brand {
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e8cff, #9f5cff) !important;
+    font-size: 0.65rem;
+    padding: 0.25em 0.6em;
+    vertical-align: middle;
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background: rgba(78, 140, 255, 0.12);
+    color: var(--accent-blue) !important;
+}
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--bg-card), #1e2130);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    padding: 1rem 1.25rem 0.5rem;
+}
+
+/* Team Badges */
+.team-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.team-badge-lg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 1.5rem;
+}
+
+.team-badge-xl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    font-size: 2.2rem;
+}
+
+.winner-glow {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+    border: 2px solid rgba(255, 193, 7, 0.5);
+}
+
+/* Team Logo */
+.team-logo {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.team-logo-xl {
+    width: 100px;
+    height: 100px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Match Cards */
+.match-card {
+    transition: background 0.2s;
+    border-radius: 0;
+}
+
+.match-card:hover {
+    background: var(--bg-hover) !important;
+}
+
+.match-schedule-card {
+    transition: transform 0.2s;
+}
+
+.match-schedule-card:hover {
+    transform: translateY(-3px);
+}
+
+.prediction-card {
+    transition: transform 0.2s;
+}
+
+.prediction-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Team Card */
+.team-card {
+    transition: transform 0.2s;
+}
+
+.team-card:hover {
+    transform: translateY(-4px);
+}
+
+/* VS Badge */
+.vs-badge {
+    font-weight: 800;
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.vs-badge-lg {
+    font-weight: 800;
+    color: #6c757d;
+    font-size: 1.2rem;
+    background: rgba(108, 117, 125, 0.15);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+/* Win Probability Bar */
+.win-prob-bar {
+    display: flex;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(108, 117, 125, 0.15);
+}
+
+.win-prob-fill {
+    transition: width 0.8s ease;
+    border-radius: 6px 0 0 6px;
+}
+
+.win-prob-fill-right {
+    transition: width 0.8s ease;
+    border-radius: 0 6px 6px 0;
+}
+
+/* Date Separator */
+.date-separator {
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+/* Player Avatar */
+.player-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.05);
+}
+
+/* Form Circle */
+.form-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+}
+
+/* Form String */
+.form-string {
+    letter-spacing: 2px;
+}
+
+/* Hero Section */
+.hero-section {
+    padding: 2rem 0;
+}
+
+/* Tables */
+.table {
+    --bs-table-bg: transparent;
+    margin-bottom: 0;
+}
+
+.table thead tr {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Progress bars */
+.progress {
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+}
+
+/* Badges */
+.badge {
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* Links */
+a {
+    color: #b0c4ff;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: #4e8cff;
+}
+
+/* List group */
+.list-group-item {
+    background: transparent;
+    border-color: rgba(255,255,255,0.06);
+    transition: background 0.15s;
+}
+
+.list-group-item:hover {
+    background: var(--bg-hover);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+/* Match header gradient */
+.match-header-gradient {
+    border-radius: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 1.5rem;
+    }
+
+    .team-badge-xl {
+        width: 56px;
+        height: 56px;
+        font-size: 1.6rem;
+    }
+
+    .form-circle {
+        width: 60px;
+        height: 60px;
+    }
+
+    .form-circle h3 {
+        font-size: 1.2rem;
+    }
+
+    .player-avatar {
+        width: 70px;
+        height: 70px;
+    }
+}
+
+/* Form select dark theme */
+.form-select {
+    background-color: var(--bg-card);
+    border-color: rgba(255,255,255,0.1);
+    color: #e9ecef;
+}
+
+.form-select:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 0.2rem rgba(78, 140, 255, 0.15);
+}
+
+/* Footer */
+footer {
+    border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* ========== Fantasy League Styles ========== */
+.fantasy-page .fantasy-hero {
+    background: linear-gradient(135deg, rgba(78,140,255,0.08), rgba(159,92,255,0.08));
+    border: 1px solid rgba(78,140,255,0.12);
+}
+
+.btn-fantasy {
+    background: linear-gradient(135deg, #4e8cff, #9f5cff);
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.btn-fantasy:hover {
+    background: linear-gradient(135deg, #3d7bf0, #8e4bee);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(78,140,255,0.3);
+}
+
+.bg-fantasy {
+    background: linear-gradient(135deg, #4e8cff, #9f5cff) !important;
+}
+
+.fantasy-input {
+    background: var(--bg-card) !important;
+    border: 1px solid rgba(78,140,255,0.3) !important;
+    color: #e9ecef !important;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+}
+
+.fantasy-input:focus {
+    border-color: #4e8cff !important;
+    box-shadow: 0 0 0 0.2rem rgba(78,140,255,0.15) !important;
+}
+
+.fantasy-user-badge {
+    background: rgba(78,140,255,0.1);
+    border: 1px solid rgba(78,140,255,0.2);
+}
+
+.fantasy-points {
+    color: #4e8cff;
+}
+
+.fantasy-highlight {
+    background: rgba(78,140,255,0.06) !important;
+}
+
+.fantasy-match-link {
+    background: rgba(255,255,255,0.02);
+    transition: all 0.2s;
+}
+
+.fantasy-match-link:hover {
+    background: var(--bg-hover);
+    transform: translateX(4px);
+}
+
+.fantasy-player-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.15s;
+}
+
+.fantasy-player-card:hover {
+    background: rgba(78,140,255,0.06);
+    border-color: rgba(78,140,255,0.15);
+}
+
+.fantasy-player-card input:checked ~ label .fw-semibold {
+    color: #4e8cff;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.accordion-button:not(.collapsed) {
+    background: rgba(78,140,255,0.06) !important;
+    color: inherit;
+    box-shadow: none;
+}
+
+.accordion-button::after {
+    filter: invert(1);
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+}

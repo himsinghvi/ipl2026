@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Fantasy League - IPL 2026{% endblock %}
+
+{% block content %}
+<div class="fantasy-page">
+    <!-- Hero Section -->
+    <div class="fantasy-hero mb-4 p-4 rounded-3 text-center">
+        <h1 class="fw-bold mb-2"><i class="bi bi-stars me-2"></i>IPL 2026 Fantasy League</h1>
+        <p class="text-muted mb-3">Pick your dream XI, earn points, climb the leaderboard!</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show mx-auto" style="max-width:600px" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if current_user %}
+        <div class="d-inline-flex align-items-center gap-3 fantasy-user-badge px-4 py-2 rounded-pill">
+            <span class="fs-4">{{ current_user.avatar_emoji }}</span>
+            <div class="text-start">
+                <div class="fw-bold">{{ current_user.username }}</div>
+                <small class="text-muted">{{ current_user.total_points }} pts &middot; {{ current_user.matches_played }} matches</small>
+            </div>
+            <a href="{{ url_for('fantasy_logout') }}" class="btn btn-sm btn-outline-secondary ms-2">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+        {% else %}
+        <form action="{{ url_for('fantasy_join') }}" method="POST" class="d-inline-flex gap-2 justify-content-center align-items-center flex-wrap">
+            <input type="text" name="username" class="form-control fantasy-input" placeholder="Enter your username" minlength="3" maxlength="30" required style="max-width:250px">
+            <button type="submit" class="btn btn-fantasy">
+                <i class="bi bi-rocket-takeoff me-1"></i>Join League
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Points System Quick Reference -->
+    <div class="card border-0 mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#pointsSystem" role="button">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2 text-info"></i>Points System</h6>
+                <i class="bi bi-chevron-down text-muted"></i>
+            </div>
+            <div class="collapse" id="pointsSystem">
+                <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(78,140,255,0.08)">
+                            <h6 class="text-info mb-2"><i class="bi bi-bat-fill me-1"></i>Batting</h6>
+                            <small class="d-block text-muted">+1 per run &middot; +1 per four &middot; +2 per six</small>
+                            <small class="d-block text-muted">+4 for 25 runs &middot; +8 for 50 &middot; +16 for 100</small>
+                            <small class="d-block text-muted">-2 for duck &middot; SR bonus/penalty</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(255,107,107,0.08)">
+                            <h6 class="text-danger mb-2"><i class="bi bi-bullseye me-1"></i>Bowling</h6>
+                            <small class="d-block text-muted">+25 per wicket &middot; +12 per maiden</small>
+                            <small class="d-block text-muted">+8 for 3W &middot; +12 for 4W &middot; +16 for 5W</small>
+                            <small class="d-block text-muted">Economy bonus/penalty</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 rounded-3" style="background:rgba(251,191,36,0.08)">
+                            <h6 class="text-warning mb-2"><i class="bi bi-star-fill me-1"></i>Multiplier</h6>
+                            <small class="d-block text-muted">Captain: <strong>2x</strong> points</small>
+                            <small class="d-block text-muted">Vice Captain: <strong>1.5x</strong> points</small>
+                            <small class="d-block text-muted">+8 per catch &middot; +12 per run out</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Overall Leaderboard -->
+        <div class="col-lg-7">
+            <div class="card border-0 h-100">
+                <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Overall Leaderboard</h5>
+                    <span class="badge bg-fantasy">{{ leaderboard|length }} players</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4" style="width:50px">#</th>
+                                    <th>Player</th>
+                                    <th class="text-center">Matches</th>
+                                    <th class="text-center">Avg</th>
+                                    <th class="text-end pe-4">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in leaderboard %}
+                                <tr class="{% if current_user and current_user.id == user.id %}table-active fantasy-highlight{% endif %}">
+                                    <td class="ps-4">
+                                        {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark">🥇</span>
+                                        {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary">🥈</span>
+                                        {% elif loop.index == 3 %}
+                                        <span class="badge bg-danger">🥉</span>
+                                        {% else %}
+                                        <span class="text-muted">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('fantasy_user_profile', user_id=user.id) }}" class="text-decoration-none">
+                                            <span class="me-2">{{ user.avatar_emoji }}</span>
+                                            <span class="fw-semibold">{{ user.username }}</span>
+                                        </a>
+                                    </td>
+                                    <td class="text-center text-muted">{{ user.matches_played }}</td>
+                                    <td class="text-center text-muted">
+                                        {{ (user.total_points / user.matches_played)|round(1) if user.matches_played > 0 else 0 }}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <span class="fw-bold fantasy-points">{{ user.total_points }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Matches -->
+        <div class="col-lg-5">
+            <!-- Upcoming Matches to Play -->
+            {% if upcoming_matches %}
+            <div class="card border-0 mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="bi bi-controller text-success me-2"></i>Create Your Team</h5>
+                </div>
+                <div class="card-body pt-0">
+                    {% for match in upcoming_matches[:5] %}
+                    <a href="{{ url_for('fantasy_match', match_id=match.id) }}" class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-2 text-decoration-none fantasy-match-link">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="text-center" style="min-width:90px">
+                                <span class="team-badge" style="background:{{ match.team1.color }}20; color:{{ match.team1.color }}">{{ match.team1.logo_emoji }}</span>
+                                <small class="d-block text-muted mt-1">{{ match.team1.short_name }}</small>
+                            </div>
+                            <span class="vs-badge">VS</span>
+                            <div class="text-center" style="min-width:90px">
+                                <span class="team-badge" style="background:{{ match.team2.color }}20; color:{{ match.team2.color }}">{{ match.team2.logo_emoji }}</span>
+                                <small class="d-block text-muted mt-1">{{ match.team2.short_name }}</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted d-block">{{ match.date|datefmt }}</small>
+                            <span class="badge bg-success">Play <i class="bi bi-chevron-right"></i></span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Completed Matches -->
+            <div class="card border-0">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="bi bi-clock-history text-info me-2"></i>Recent Results</h5>
+                </div>
+                <div class="card-body pt-0" style="max-height:400px; overflow-y:auto">
+                    {% for match in completed_matches[:10] %}
+                    <a href="{{ url_for('fantasy_match', match_id=match.id) }}" class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-2 text-decoration-none fantasy-match-link">
+                        <div>
+                            <div class="fw-semibold">
+                                {{ match.team1.short_name }} vs {{ match.team2.short_name }}
+                                <small class="text-muted ms-1">#{{ match.match_number }}</small>
+                            </div>
+                            <small class="text-muted">{{ match.date|datefmt }}</small>
+                        </div>
+                        <div class="text-end">
+                            {% if match.id in match_winners %}
+                            <div class="fw-bold fantasy-points">{{ match_winners[match.id].total_points }} pts</div>
+                            <small class="text-muted">{{ match_winners[match.id].user.avatar_emoji }} {{ match_winners[match.id].user.username }}</small>
+                            {% else %}
+                            <small class="text-muted">No entries</small>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

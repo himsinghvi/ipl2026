@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}IPL 2026 - AI Match Predictions{% endblock %}
+{% block content %}
+
+<div class="text-center mb-4">
+    <h2 class="fw-bold"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>AI Match Predictions</h2>
+    <p class="text-muted">ML-powered win probabilities for upcoming IPL 2026 matches</p>
+</div>
+
+{% if predictions %}
+<div class="row g-4">
+    {% for item in predictions %}
+    <div class="col-md-6 col-lg-4">
+        <a href="/match/{{ item.match.id }}" class="card border-0 shadow-sm h-100 text-decoration-none prediction-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-info bg-opacity-25 text-info">Match {{ item.match.match_number }}</span>
+                    <small class="text-muted">{{ item.match.date|datefmt('%d %b') }}</small>
+                </div>
+
+                <!-- Teams -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="text-center">
+                        <span class="team-badge-lg" style="background: {{ item.team1.color }};">{{ item.team1.logo_emoji }}</span>
+                        <div class="fw-bold small mt-1">{{ item.team1.short_name }}</div>
+                    </div>
+                    <div class="text-center px-2">
+                        <span class="text-muted fw-bold">VS</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="team-badge-lg" style="background: {{ item.team2.color }};">{{ item.team2.logo_emoji }}</span>
+                        <div class="fw-bold small mt-1">{{ item.team2.short_name }}</div>
+                    </div>
+                </div>
+
+                <!-- Win Probability Bar -->
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="fw-bold" style="color: {{ item.team1.color }}">{{ item.prediction.team1_pct }}%</small>
+                        <small class="text-muted">Win Probability</small>
+                        <small class="fw-bold" style="color: {{ item.team2.color }}">{{ item.prediction.team2_pct }}%</small>
+                    </div>
+                    <div class="win-prob-bar">
+                        <div class="win-prob-fill" style="width: {{ item.prediction.team1_pct }}%; background: {{ item.team1.color }};"></div>
+                        <div class="win-prob-fill-right" style="width: {{ item.prediction.team2_pct }}%; background: {{ item.team2.color }};"></div>
+                    </div>
+                </div>
+
+                <!-- Predicted Winner -->
+                <div class="text-center mt-3">
+                    {% if item.prediction.team1_pct > item.prediction.team2_pct %}
+                    <span class="badge px-3 py-2" style="background: {{ item.team1.color }}30; color: {{ item.team1.color }}; border: 1px solid {{ item.team1.color }}50;">
+                        <i class="bi bi-trophy-fill me-1"></i>{{ item.team1.short_name }} Favored
+                    </span>
+                    {% else %}
+                    <span class="badge px-3 py-2" style="background: {{ item.team2.color }}30; color: {{ item.team2.color }}; border: 1px solid {{ item.team2.color }}50;">
+                        <i class="bi bi-trophy-fill me-1"></i>{{ item.team2.short_name }} Favored
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="text-center mt-2">
+                    <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ item.match.city }}</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+    <h5 class="text-muted mt-3">No upcoming matches to predict</h5>
+</div>
+{% endif %}
+
+{% endblock %}
