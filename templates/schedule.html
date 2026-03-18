@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}IPL 2026 - Full Schedule{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-calendar3 me-2 text-primary"></i>IPL 2026 Schedule</h2>
+        <p class="text-muted mb-0">{{ matches|length }} matches</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="upcoming" {% if status_filter == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Stage</label>
+                <select name="stage" class="form-select">
+                    <option value="all" {% if stage_filter == 'all' %}selected{% endif %}>All Stages</option>
+                    <option value="League" {% if stage_filter == 'League' %}selected{% endif %}>League</option>
+                    <option value="Qualifier 1" {% if stage_filter == 'Qualifier 1' %}selected{% endif %}>Qualifier 1</option>
+                    <option value="Eliminator" {% if stage_filter == 'Eliminator' %}selected{% endif %}>Eliminator</option>
+                    <option value="Qualifier 2" {% if stage_filter == 'Qualifier 2' %}selected{% endif %}>Qualifier 2</option>
+                    <option value="Final" {% if stage_filter == 'Final' %}selected{% endif %}>Final</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Team</label>
+                <select name="team" class="form-select">
+                    <option value="all" {% if team_filter == 'all' %}selected{% endif %}>All Teams</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if team_filter == team.id|string %}selected{% endif %}>{{ team.short_name }} - {{ team.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Schedule List -->
+<div class="row g-3">
+    {% set ns = namespace(current_date='') %}
+    {% for match in matches %}
+    {% set match_date = match.date|datefmt %}
+    {% if match_date != ns.current_date %}
+        {% set ns.current_date = match_date %}
+        <div class="col-12">
+            <div class="date-separator">
+                <span class="badge bg-secondary px-3 py-2">
+                    <i class="bi bi-calendar-event me-1"></i>{{ match.date|datefmt('%A, %d %B %Y') }}
+                </span>
+            </div>
+        </div>
+    {% endif %}
+    <div class="col-md-6 col-lg-4">
+        <a href="/match/{{ match.id }}" class="card match-schedule-card border-0 shadow-sm h-100 text-decoration-none">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge {% if match.status == 'completed' %}bg-success{% elif match.status == 'upcoming' %}bg-info{% else %}bg-danger{% endif %}">
+                        {{ match.status|upper }}
+                    </span>
+                    <span class="badge bg-secondary">Match {{ match.match_number }} | {{ match.stage }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="text-center flex-fill">
+                        <span class="team-badge-lg" style="background: {{ match.team1.color }};">{{ match.team1.logo_emoji }}</span>
+                        <div class="fw-bold mt-1">{{ match.team1.short_name }}</div>
+                        {% if match.status == 'completed' %}
+                        <div class="fs-5 fw-bold {% if match.winner_id == match.team1_id %}text-success{% endif %}">{{ match.team1_score }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="vs-badge mx-2">VS</div>
+                    <div class="text-center flex-fill">
+                        <span class="team-badge-lg" style="background: {{ match.team2.color }};">{{ match.team2.logo_emoji }}</span>
+                        <div class="fw-bold mt-1">{{ match.team2.short_name }}</div>
+                        {% if match.status == 'completed' %}
+                        <div class="fs-5 fw-bold {% if match.winner_id == match.team2_id %}text-success{% endif %}">{{ match.team2_score }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if match.status == 'completed' and match.winner %}
+                <div class="text-center mb-2">
+                    <span class="badge bg-success bg-opacity-25 text-success">
+                        <i class="bi bi-trophy-fill me-1"></i>{{ match.winner.short_name }} won by {{ match.win_margin }}
+                    </span>
+                </div>
+                {% endif %}
+
+                <div class="text-center text-muted small">
+                    <i class="bi bi-clock me-1"></i>{{ match.date|timefmt }}
+                    <span class="mx-2">|</span>
+                    <i class="bi bi-geo-alt me-1"></i>{{ match.city }}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not matches %}
+<div class="text-center py-5">
+    <i class="bi bi-calendar-x fs-1 text-muted"></i>
+    <h5 class="text-muted mt-3">No matches found for the selected filters</h5>
+    <a href="/schedule" class="btn btn-outline-primary mt-2">Clear Filters</a>
+</div>
+{% endif %}
+
+{% endblock %}

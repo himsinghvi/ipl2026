@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} - Team Profile{% endblock %}
+{% block content %}
+
+<!-- Team Header -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="card-body py-4" style="background: {{ team.color }}15;">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="team-logo-xl" style="background: {{ team.color }}30; border: 3px solid {{ team.color }};">
+                    <span style="font-size: 3.5rem;">{{ team.logo_emoji }}</span>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="fw-bold mb-1">{{ team.name }}</h2>
+                <p class="text-muted mb-2">{{ team.home_ground }}</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge bg-warning text-dark px-3 py-2"><i class="bi bi-trophy-fill me-1"></i>{{ team.titles_won }} Titles</span>
+                    <span class="badge bg-primary px-3 py-2"><i class="bi bi-bar-chart me-1"></i>{{ team.win_pct_hist }}% Win Rate (Historical)</span>
+                    <span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>{{ wins }}W - {{ losses }}L (2026)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Season Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body">
+                <h3 class="fw-bold mb-0 text-primary">{{ completed_matches|length }}</h3>
+                <small class="text-muted">Played (2026)</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body">
+                <h3 class="fw-bold mb-0 text-success">{{ wins }}</h3>
+                <small class="text-muted">Won</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body">
+                <h3 class="fw-bold mb-0 text-danger">{{ losses }}</h3>
+                <small class="text-muted">Lost</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body">
+                <div class="d-flex justify-content-center gap-1">
+                    {% for c in form.form_str %}
+                    <span class="badge {% if c == 'W' %}bg-success{% else %}bg-danger{% endif %}">{{ c }}</span>
+                    {% endfor %}
+                </div>
+                <small class="text-muted mt-1 d-block">Recent Form</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Squad -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-people-fill me-2 text-primary"></i>Squad</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th class="ps-3">Player</th>
+                                <th>Role</th>
+                                <th class="text-center">M</th>
+                                <th class="text-center">Runs</th>
+                                <th class="text-center">Avg</th>
+                                <th class="text-center">SR</th>
+                                <th class="text-center">Wkts</th>
+                                <th class="text-center">Eco</th>
+                                <th class="text-center">Form</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in players %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ p.id }}" class="text-decoration-none">
+                                        <span class="fw-semibold">{{ p.name }}</span>
+                                        {% if p.is_overseas %}<span class="badge bg-info bg-opacity-25 text-info ms-1" style="font-size:0.6rem;">OS</span>{% endif %}
+                                    </a>
+                                    <small class="text-muted d-block">{{ p.nationality }} | {{ p.batting_style }}</small>
+                                </td>
+                                <td><span class="badge bg-body-secondary">{{ p.role }}</span></td>
+                                <td class="text-center">{{ p.matches_played }}</td>
+                                <td class="text-center fw-bold">{{ p.runs_scored }}</td>
+                                <td class="text-center">{{ p.batting_avg }}</td>
+                                <td class="text-center">{{ p.strike_rate }}</td>
+                                <td class="text-center fw-bold">{{ p.wickets_taken }}</td>
+                                <td class="text-center">{{ p.economy_rate if p.economy_rate > 0 else '-' }}</td>
+                                <td class="text-center">
+                                    <div class="progress" style="height: 8px; width: 60px; margin: 0 auto;">
+                                        <div class="progress-bar {% if p.form_rating > 75 %}bg-success{% elif p.form_rating > 55 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ p.form_rating }}%"></div>
+                                    </div>
+                                    <small>{{ p.form_rating|int }}/100</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Squad Composition Chart -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-pie-chart-fill me-2 text-info"></i>Squad Composition & Form</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="roleChart" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="formChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar: Matches -->
+    <div class="col-lg-4">
+        {% if upcoming_matches %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-clock me-2 text-info"></i>Upcoming Matches</h5>
+            </div>
+            <div class="card-body p-0">
+                {% for match in upcoming_matches[:5] %}
+                <a href="/match/{{ match.id }}" class="d-block text-decoration-none p-3 border-bottom match-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold">
+                                {% if match.team1_id == team.id %}
+                                vs {{ match.team2.short_name }}
+                                {% else %}
+                                vs {{ match.team1.short_name }}
+                                {% endif %}
+                            </span>
+                            <small class="text-muted d-block">{{ match.date|datefmt('%d %b') }} | {{ match.city }}</small>
+                        </div>
+                        <span class="badge bg-info">M{{ match.match_number }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if completed_matches %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Recent Results</h5>
+            </div>
+            <div class="card-body p-0">
+                {% for match in completed_matches[-5:]|reverse %}
+                <a href="/match/{{ match.id }}" class="d-block text-decoration-none p-3 border-bottom match-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold">
+                                {% if match.team1_id == team.id %}
+                                vs {{ match.team2.short_name }}
+                                {% else %}
+                                vs {{ match.team1.short_name }}
+                                {% endif %}
+                            </span>
+                            {% if match.winner_id == team.id %}
+                            <small class="text-success d-block"><i class="bi bi-check-circle-fill"></i> Won by {{ match.win_margin }}</small>
+                            {% else %}
+                            <small class="text-danger d-block"><i class="bi bi-x-circle-fill"></i> Lost by {{ match.win_margin }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="badge {% if match.winner_id == team.id %}bg-success{% else %}bg-danger{% endif %}">
+                            {% if match.winner_id == team.id %}W{% else %}L{% endif %}
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Role distribution
+    const roles = {};
+    {% for p in players %}
+    roles['{{ p.role }}'] = (roles['{{ p.role }}'] || 0) + 1;
+    {% endfor %}
+
+    const roleCtx = document.getElementById('roleChart');
+    if (roleCtx) {
+        new Chart(roleCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(roles),
+                datasets: [{
+                    data: Object.values(roles),
+                    backgroundColor: ['#0d6efd', '#dc3545', '#198754', '#ffc107', '#0dcaf0'],
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#adb5bd', padding: 15 } },
+                    title: { display: true, text: 'Role Distribution', color: '#adb5bd' }
+                }
+            }
+        });
+    }
+
+    // Form ratings
+    const formCtx = document.getElementById('formChart');
+    if (formCtx) {
+        const names = [{% for p in players[:8] %}'{{ p.name|truncate(10, True) }}',{% endfor %}];
+        const forms = [{% for p in players[:8] %}{{ p.form_rating }},{% endfor %}];
+        const formColors = forms.map(f => f > 75 ? '#198754' : f > 55 ? '#ffc107' : '#dc3545');
+
+        new Chart(formCtx, {
+            type: 'bar',
+            data: {
+                labels: names,
+                datasets: [{
+                    label: 'Form Rating',
+                    data: forms,
+                    backgroundColor: formColors.map(c => c + '99'),
+                    borderColor: formColors,
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Player Form Ratings', color: '#adb5bd' }
+                },
+                scales: {
+                    x: { beginAtZero: true, max: 100, grid: { color: '#33373a' }, ticks: { color: '#adb5bd' } },
+                    y: { grid: { display: false }, ticks: { color: '#adb5bd', font: { size: 10 } } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

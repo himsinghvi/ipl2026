@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}{{ team1.short_name }} vs {{ team2.short_name }} - Prediction{% endblock %}
+{% block content %}
+
+<!-- Match Header -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="match-header-gradient" style="background: linear-gradient(135deg, {{ team1.color }}40, {{ team2.color }}40);">
+        <div class="card-body py-4">
+            <div class="text-center mb-2">
+                <span class="badge bg-info">{{ match.stage }} - Match {{ match.match_number }}</span>
+                <span class="badge bg-secondary ms-1">{{ match.date|datefmt('%A, %d %B %Y') }} | {{ match.date|timefmt }}</span>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-5 text-center">
+                    <span class="team-badge-xl" style="background: {{ team1.color }};">{{ team1.logo_emoji }}</span>
+                    <h3 class="fw-bold mt-2 mb-0">{{ team1.short_name }}</h3>
+                    <p class="text-muted small mb-0">{{ team1.name }}</p>
+                </div>
+                <div class="col-2 text-center">
+                    <span class="vs-badge-lg">VS</span>
+                </div>
+                <div class="col-5 text-center">
+                    <span class="team-badge-xl" style="background: {{ team2.color }};">{{ team2.logo_emoji }}</span>
+                    <h3 class="fw-bold mt-2 mb-0">{{ team2.short_name }}</h3>
+                    <p class="text-muted small mb-0">{{ team2.name }}</p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i>{{ match.venue }}, {{ match.city }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Win Probability -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>AI Win Probability Prediction</h5>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center mb-4">
+            <div class="col-3 text-center">
+                <h2 class="fw-bold mb-0" style="color: {{ team1.color }}">{{ prediction.team1_pct }}%</h2>
+                <small class="fw-semibold">{{ team1.short_name }}</small>
+            </div>
+            <div class="col-6">
+                <div class="win-prob-bar">
+                    <div class="win-prob-fill" style="width: {{ prediction.team1_pct }}%; background: {{ team1.color }};">
+                    </div>
+                    <div class="win-prob-fill-right" style="width: {{ prediction.team2_pct }}%; background: {{ team2.color }};">
+                    </div>
+                </div>
+            </div>
+            <div class="col-3 text-center">
+                <h2 class="fw-bold mb-0" style="color: {{ team2.color }}">{{ prediction.team2_pct }}%</h2>
+                <small class="fw-semibold">{{ team2.short_name }}</small>
+            </div>
+        </div>
+
+        <!-- Prediction Factors -->
+        <h6 class="text-muted mb-3">Prediction Breakdown</h6>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card bg-body-secondary border-0">
+                    <div class="card-body text-center p-3">
+                        <i class="bi bi-lightning-fill text-warning fs-4"></i>
+                        <h6 class="small text-muted mt-2 mb-1">Team Strength</h6>
+                        <div class="d-flex justify-content-around">
+                            <div>
+                                <span class="fw-bold" style="color:{{ team1.color }}">{{ prediction.factors.team_strength.team1 }}</span>
+                                <small class="d-block text-muted">{{ team1.short_name }}</small>
+                            </div>
+                            <div>
+                                <span class="fw-bold" style="color:{{ team2.color }}">{{ prediction.factors.team_strength.team2 }}</span>
+                                <small class="d-block text-muted">{{ team2.short_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-body-secondary border-0">
+                    <div class="card-body text-center p-3">
+                        <i class="bi bi-arrow-left-right text-info fs-4"></i>
+                        <h6 class="small text-muted mt-2 mb-1">Head to Head</h6>
+                        <div class="d-flex justify-content-around">
+                            <div>
+                                <span class="fw-bold text-success">{{ prediction.factors.head_to_head.team1_wins }}</span>
+                                <small class="d-block text-muted">{{ team1.short_name }}</small>
+                            </div>
+                            <div>
+                                <span class="fw-bold">{{ prediction.factors.head_to_head.total }}</span>
+                                <small class="d-block text-muted">Total</small>
+                            </div>
+                            <div>
+                                <span class="fw-bold text-danger">{{ prediction.factors.head_to_head.team2_wins }}</span>
+                                <small class="d-block text-muted">{{ team2.short_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-body-secondary border-0">
+                    <div class="card-body text-center p-3">
+                        <i class="bi bi-fire text-danger fs-4"></i>
+                        <h6 class="small text-muted mt-2 mb-1">Recent Form</h6>
+                        <div class="d-flex justify-content-around">
+                            <div>
+                                <span class="fw-bold form-string">
+                                    {% for c in team1_form.form_str %}
+                                    <span class="{% if c == 'W' %}text-success{% else %}text-danger{% endif %}">{{ c }}</span>
+                                    {% endfor %}
+                                </span>
+                                <small class="d-block text-muted">{{ team1.short_name }}</small>
+                            </div>
+                            <div>
+                                <span class="fw-bold form-string">
+                                    {% for c in team2_form.form_str %}
+                                    <span class="{% if c == 'W' %}text-success{% else %}text-danger{% endif %}">{{ c }}</span>
+                                    {% endfor %}
+                                </span>
+                                <small class="d-block text-muted">{{ team2.short_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-body-secondary border-0">
+                    <div class="card-body text-center p-3">
+                        <i class="bi bi-bar-chart-fill text-success fs-4"></i>
+                        <h6 class="small text-muted mt-2 mb-1">Historical Win %</h6>
+                        <div class="d-flex justify-content-around">
+                            <div>
+                                <span class="fw-bold" style="color:{{ team1.color }}">{{ prediction.factors.historical_win_pct.team1 }}%</span>
+                                <small class="d-block text-muted">{{ team1.short_name }}</small>
+                            </div>
+                            <div>
+                                <span class="fw-bold" style="color:{{ team2.color }}">{{ prediction.factors.historical_win_pct.team2 }}%</span>
+                                <small class="d-block text-muted">{{ team2.short_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <canvas id="winProbChart" height="80"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Predicted Top Performers -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-star-fill me-2 text-warning"></i>Predicted Top Batsmen</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th class="ps-3">Player</th>
+                                <th class="text-center">Expected Runs</th>
+                                <th class="text-center">Expected SR</th>
+                                <th class="text-center">Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in top_batsmen %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ b.player.id }}" class="text-decoration-none">
+                                        <span class="fw-semibold">{{ b.player.name }}</span>
+                                        <small class="text-muted d-block">{{ b.player.team.short_name }} | {{ b.player.role }}</small>
+                                    </a>
+                                </td>
+                                <td class="text-center fw-bold text-warning">{{ b.expected_runs }}</td>
+                                <td class="text-center">{{ b.expected_sr }}</td>
+                                <td class="text-center">
+                                    <div class="progress" style="height: 6px; width: 60px; margin: 0 auto;">
+                                        <div class="progress-bar bg-success" style="width: {{ b.confidence }}%"></div>
+                                    </div>
+                                    <small>{{ b.confidence }}%</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0"><i class="bi bi-bullseye me-2 text-danger"></i>Predicted Top Bowlers</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th class="ps-3">Player</th>
+                                <th class="text-center">Expected Wkts</th>
+                                <th class="text-center">Expected Eco</th>
+                                <th class="text-center">Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in top_bowlers %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ b.player.id }}" class="text-decoration-none">
+                                        <span class="fw-semibold">{{ b.player.name }}</span>
+                                        <small class="text-muted d-block">{{ b.player.team.short_name }} | {{ b.player.role }}</small>
+                                    </a>
+                                </td>
+                                <td class="text-center fw-bold text-danger">{{ b.expected_wickets }}</td>
+                                <td class="text-center">{{ b.expected_economy }}</td>
+                                <td class="text-center">
+                                    <div class="progress" style="height: 6px; width: 60px; margin: 0 auto;">
+                                        <div class="progress-bar bg-danger" style="width: {{ b.confidence }}%"></div>
+                                    </div>
+                                    <small>{{ b.confidence }}%</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Squads -->
+<div class="row g-4">
+    {% for team, players in [(team1, team1_players), (team2, team2_players)] %}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header border-0" style="background: {{ team.color }}20;">
+                <h5 class="mb-0">
+                    <span class="team-badge me-2" style="background:{{ team.color }};">{{ team.logo_emoji }}</span>
+                    {{ team.name }} Squad
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead>
+                            <tr class="text-muted">
+                                <th class="ps-3">Player</th>
+                                <th>Role</th>
+                                <th class="text-center">Avg</th>
+                                <th class="text-center">SR</th>
+                                <th class="text-center">Form</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in players %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ p.id }}" class="text-decoration-none fw-semibold">
+                                        {{ p.name }}
+                                        {% if p.is_overseas %}<span class="badge bg-info bg-opacity-25 text-info ms-1" style="font-size:0.6rem;">OS</span>{% endif %}
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-body-secondary">{{ p.role }}</span></td>
+                                <td class="text-center">{{ p.batting_avg }}</td>
+                                <td class="text-center">{{ p.strike_rate }}</td>
+                                <td class="text-center">
+                                    <div class="progress" style="height: 6px; width: 50px; margin: 0 auto;">
+                                        <div class="progress-bar {% if p.form_rating > 70 %}bg-success{% elif p.form_rating > 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ p.form_rating }}%"></div>
+                                    </div>
+                                    <small>{{ p.form_rating|int }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('winProbChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Team Strength', 'Head to Head', 'Recent Form', 'Historical'],
+                datasets: [
+                    {
+                        label: '{{ team1.short_name }}',
+                        data: [
+                            {{ prediction.factors.team_strength.team1 }},
+                            {{ prediction.factors.head_to_head.team1_pct }},
+                            {{ prediction.factors.recent_form.team1.form_pct }},
+                            {{ prediction.factors.historical_win_pct.team1 }}
+                        ],
+                        backgroundColor: '{{ team1.color }}99',
+                        borderColor: '{{ team1.color }}',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: '{{ team2.short_name }}',
+                        data: [
+                            {{ prediction.factors.team_strength.team2 }},
+                            {{ 100 - prediction.factors.head_to_head.team1_pct }},
+                            {{ prediction.factors.recent_form.team2.form_pct }},
+                            {{ prediction.factors.historical_win_pct.team2 }}
+                        ],
+                        backgroundColor: '{{ team2.color }}99',
+                        borderColor: '{{ team2.color }}',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#adb5bd' } } },
+                scales: {
+                    y: { beginAtZero: true, max: 100, grid: { color: '#33373a' }, ticks: { color: '#adb5bd' } },
+                    x: { grid: { display: false }, ticks: { color: '#adb5bd' } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

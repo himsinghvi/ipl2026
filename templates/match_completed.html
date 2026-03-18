@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}{{ team1.short_name }} vs {{ team2.short_name }} - Match Analysis{% endblock %}
+{% block content %}
+
+<!-- Match Header -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="match-header-gradient" style="background: linear-gradient(135deg, {{ team1.color }}40, {{ team2.color }}40);">
+        <div class="card-body py-4">
+            <div class="text-center mb-2">
+                <span class="badge bg-success">COMPLETED</span>
+                <span class="badge bg-secondary ms-1">{{ match.stage }} - Match {{ match.match_number }}</span>
+                <span class="badge bg-secondary ms-1">{{ match.date|datefmt('%d %B %Y') }}</span>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-5 text-center">
+                    <span class="team-badge-xl {% if match.winner_id == team1.id %}winner-glow{% endif %}" style="background: {{ team1.color }};">{{ team1.logo_emoji }}</span>
+                    <h3 class="fw-bold mt-2 mb-0">{{ team1.short_name }}</h3>
+                    <h2 class="fw-bold {% if match.winner_id == team1.id %}text-success{% endif %}">{{ match.team1_score }}</h2>
+                </div>
+                <div class="col-2 text-center">
+                    <span class="vs-badge-lg">VS</span>
+                </div>
+                <div class="col-5 text-center">
+                    <span class="team-badge-xl {% if match.winner_id == team2.id %}winner-glow{% endif %}" style="background: {{ team2.color }};">{{ team2.logo_emoji }}</span>
+                    <h3 class="fw-bold mt-2 mb-0">{{ team2.short_name }}</h3>
+                    <h2 class="fw-bold {% if match.winner_id == team2.id %}text-success{% endif %}">{{ match.team2_score }}</h2>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                {% if match.winner %}
+                <div class="badge bg-success bg-opacity-25 text-success px-3 py-2 fs-6">
+                    <i class="bi bi-trophy-fill me-1"></i>{{ match.winner.short_name }} won by {{ match.win_margin }}
+                </div>
+                {% endif %}
+                {% if match.potm %}
+                <div class="mt-2">
+                    <span class="badge bg-warning text-dark px-3 py-2">
+                        <i class="bi bi-star-fill me-1"></i>Player of the Match: {{ match.potm.name }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i>{{ match.venue }}, {{ match.city }}</small>
+                {% if match.toss_winner %}
+                <small class="text-muted ms-3"><i class="bi bi-coin me-1"></i>{{ match.toss_winner.short_name }} won toss, chose to {{ match.toss_decision }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Match Stats Overview -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-star-fill text-warning fs-3"></i>
+                <h6 class="text-muted mt-2 small">Top Scorer</h6>
+                {% if analysis.top_scorer %}
+                <a href="/player/{{ analysis.top_scorer.player.id }}" class="text-decoration-none">
+                    <h5 class="fw-bold mb-0">{{ analysis.top_scorer.player.name }}</h5>
+                    <span class="badge bg-warning text-dark">{{ analysis.top_scorer.runs }} ({{ analysis.top_scorer.balls }})</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bullseye text-danger fs-3"></i>
+                <h6 class="text-muted mt-2 small">Best Bowler</h6>
+                {% if analysis.best_bowler %}
+                <a href="/player/{{ analysis.best_bowler.player.id }}" class="text-decoration-none">
+                    <h5 class="fw-bold mb-0">{{ analysis.best_bowler.player.name }}</h5>
+                    <span class="badge bg-danger">{{ analysis.best_bowler.wickets }}/{{ analysis.best_bowler.runs_given }}</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-4-square text-primary fs-3"></i>
+                <h6 class="text-muted mt-2 small">Fours</h6>
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ analysis.total_fours_t1 }}</h5>
+                        <small class="text-muted">{{ team1.short_name }}</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ analysis.total_fours_t2 }}</h5>
+                        <small class="text-muted">{{ team2.short_name }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-6-square text-success fs-3"></i>
+                <h6 class="text-muted mt-2 small">Sixes</h6>
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ analysis.total_sixes_t1 }}</h5>
+                        <small class="text-muted">{{ team1.short_name }}</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ analysis.total_sixes_t2 }}</h5>
+                        <small class="text-muted">{{ team2.short_name }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Phase-wise Scoring Chart -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Phase-wise Scoring</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="phaseChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- Scorecards -->
+<div class="row g-4 mb-4">
+    {% for team, batting, bowling, color in [(team1, analysis.batting_t1, analysis.bowling_t2, team1.color), (team2, analysis.batting_t2, analysis.bowling_t1, team2.color)] %}
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header border-0" style="background: {{ color }}20;">
+                <h5 class="mb-0">
+                    <span class="team-badge me-2" style="background:{{ color }};">{{ team.logo_emoji }}</span>
+                    {{ team.short_name }} - Batting
+                    {% if team.id == team1.id %}<span class="badge bg-body-secondary ms-2">{{ match.team1_score }}</span>{% else %}<span class="badge bg-body-secondary ms-2">{{ match.team2_score }}</span>{% endif %}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead>
+                            <tr class="text-muted">
+                                <th class="ps-3">Batter</th>
+                                <th>Dismissal</th>
+                                <th class="text-center">R</th>
+                                <th class="text-center">B</th>
+                                <th class="text-center">4s</th>
+                                <th class="text-center">6s</th>
+                                <th class="text-center">SR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sc in batting %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ sc.player.id }}" class="text-decoration-none fw-semibold">{{ sc.player.name }}</a>
+                                </td>
+                                <td class="small {% if sc.how_out == 'not out' %}text-success{% else %}text-muted{% endif %}">{{ sc.how_out }}</td>
+                                <td class="text-center fw-bold {% if sc.runs >= 50 %}text-warning{% endif %}">{{ sc.runs }}</td>
+                                <td class="text-center">{{ sc.balls }}</td>
+                                <td class="text-center">{{ sc.fours }}</td>
+                                <td class="text-center">{{ sc.sixes }}</td>
+                                <td class="text-center">{{ '%.1f'|format(sc.runs / sc.balls * 100) if sc.balls > 0 else '0.0' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header border-0" style="background: {{ color }}20;">
+                <h5 class="mb-0">
+                    <span class="team-badge me-2" style="background:{{ color }};">{{ team.logo_emoji }}</span>
+                    {{ team.short_name }} - Bowling
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead>
+                            <tr class="text-muted">
+                                <th class="ps-3">Bowler</th>
+                                <th class="text-center">O</th>
+                                <th class="text-center">M</th>
+                                <th class="text-center">R</th>
+                                <th class="text-center">W</th>
+                                <th class="text-center">Eco</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sc in bowling %}
+                            <tr>
+                                <td class="ps-3">
+                                    <a href="/player/{{ sc.player.id }}" class="text-decoration-none fw-semibold">{{ sc.player.name }}</a>
+                                </td>
+                                <td class="text-center">{{ sc.overs_bowled }}</td>
+                                <td class="text-center">{{ sc.maidens }}</td>
+                                <td class="text-center">{{ sc.runs_given }}</td>
+                                <td class="text-center fw-bold {% if sc.wickets >= 3 %}text-danger{% endif %}">{{ sc.wickets }}</td>
+                                <td class="text-center">{{ '%.2f'|format(sc.runs_given / sc.overs_bowled) if sc.overs_bowled > 0 else '0.00' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Batting Performance Chart -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent border-0">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2 text-warning"></i>Batting Performance Comparison</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="battingChart" height="120"></canvas>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Phase chart
+    const phaseCtx = document.getElementById('phaseChart');
+    if (phaseCtx) {
+        new Chart(phaseCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Powerplay (1-6)', 'Middle (7-15)', 'Death (16-20)'],
+                datasets: [
+                    {
+                        label: '{{ team1.short_name }}',
+                        data: [{{ analysis.phases.team1.powerplay }}, {{ analysis.phases.team1.middle }}, {{ analysis.phases.team1.death }}],
+                        backgroundColor: '{{ team1.color }}99',
+                        borderColor: '{{ team1.color }}',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    },
+                    {
+                        label: '{{ team2.short_name }}',
+                        data: [{{ analysis.phases.team2.powerplay }}, {{ analysis.phases.team2.middle }}, {{ analysis.phases.team2.death }}],
+                        backgroundColor: '{{ team2.color }}99',
+                        borderColor: '{{ team2.color }}',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#adb5bd' } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#33373a' }, ticks: { color: '#adb5bd' } },
+                    x: { grid: { display: false }, ticks: { color: '#adb5bd' } }
+                }
+            }
+        });
+    }
+
+    // Batting comparison chart
+    const batCtx = document.getElementById('battingChart');
+    if (batCtx) {
+        const t1Batters = [{% for sc in analysis.batting_t1[:6] %}'{{ sc.player.name|truncate(12, True) }}',{% endfor %}];
+        const t1Runs = [{% for sc in analysis.batting_t1[:6] %}{{ sc.runs }},{% endfor %}];
+        const t2Batters = [{% for sc in analysis.batting_t2[:6] %}'{{ sc.player.name|truncate(12, True) }}',{% endfor %}];
+        const t2Runs = [{% for sc in analysis.batting_t2[:6] %}{{ sc.runs }},{% endfor %}];
+
+        const allLabels = [...t1Batters.map(n => n + ' ({{ team1.short_name }})'), ...t2Batters.map(n => n + ' ({{ team2.short_name }})')];
+        const allRuns = [...t1Runs, ...t2Runs];
+        const colors = [...t1Runs.map(() => '{{ team1.color }}99'), ...t2Runs.map(() => '{{ team2.color }}99')];
+        const borders = [...t1Runs.map(() => '{{ team1.color }}'), ...t2Runs.map(() => '{{ team2.color }}')];
+
+        new Chart(batCtx, {
+            type: 'bar',
+            data: {
+                labels: allLabels,
+                datasets: [{
+                    label: 'Runs Scored',
+                    data: allRuns,
+                    backgroundColor: colors,
+                    borderColor: borders,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: '#33373a' }, ticks: { color: '#adb5bd' } },
+                    y: { grid: { display: false }, ticks: { color: '#adb5bd', font: { size: 10 } } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
