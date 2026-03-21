@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}IPL Records Hub{% endblock %}
+
+{% block content %}
+<div class="records-page">
+    <div class="records-hero card border-0 mb-4 overflow-hidden">
+        <div class="card-body p-4 p-lg-5">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <h1 class="display-6 fw-bold mb-2">
+                        <i class="bi bi-journal-richtext text-warning me-2"></i>IPL Records Hub
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Year-wise, team-wise, player-wise, batting, bowling and keeping records generated from the kaggle dataset.
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('records', refresh=1) }}" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-repeat me-1"></i>Reload CSV Records
+                    </a>
+                    <span class="badge {% if records_payload.source_status == 'csv' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                        Source: {{ records_payload.source_status|upper }}
+                    </span>
+                </div>
+            </div>
+            {% if records_payload.notices %}
+            <div class="mt-3">
+                {% for notice in records_payload.notices %}
+                <div class="alert alert-warning py-2 mb-2">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ notice }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 h-100 animate-rise">
+                <div class="card-body">
+                    <small class="text-muted">Total Record Tables</small>
+                    <h2 class="fw-bold mb-0" id="statTotalTables">{{ records_payload.summary.total_tables }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 h-100 animate-rise">
+                <div class="card-body">
+                    <small class="text-muted">Total Data Rows</small>
+                    <h2 class="fw-bold mb-0" id="statTotalRows">{{ records_payload.summary.total_rows }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 h-100 animate-rise">
+                <div class="card-body">
+                    <small class="text-muted">Current Filter Result</small>
+                    <h2 class="fw-bold mb-0" id="statFilteredTables">{{ records_payload.summary.total_tables }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 h-100 animate-rise">
+                <div class="card-body">
+                    <small class="text-muted">Generated</small>
+                    <h2 class="fw-bold mb-0" id="generatedAtLabel">--</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-4">
+                    <label class="form-label small text-muted">Search Records</label>
+                    <input id="recordsSearchInput" type="text" class="form-control" placeholder="Search by title, team, player, stat...">
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label small text-muted">Year</label>
+                    <select id="yearFilter" class="form-select">
+                        <option value="">All Years</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label small text-muted">Team</label>
+                    <select id="teamFilter" class="form-select">
+                        <option value="">All Teams</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label small text-muted">Player</label>
+                    <select id="playerFilter" class="form-select">
+                        <option value="">All Players</option>
+                    </select>
+                </div>
+                <div class="col-6 col-lg-2 d-grid">
+                    <button id="clearFiltersBtn" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-secondary border-opacity-25 my-4">
+
+            <div class="d-flex flex-wrap gap-2" id="categoryTabs"></div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="bi bi-collection-play me-2 text-info"></i>Record Collections</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div id="recordsResultsMeta" class="text-muted small mb-3"></div>
+                    <div id="recordsList" class="row g-3"></div>
+                    <div id="emptyState" class="text-center py-5 d-none">
+                        <i class="bi bi-search fs-1 text-muted"></i>
+                        <h5 class="mt-3">No records found</h5>
+                        <p class="text-muted mb-0">Try changing filters or using a broader search keyword.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Category Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="recordsCategoryChart" height="220"></canvas>
+                </div>
+            </div>
+            <div class="card border-0">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="mb-0"><i class="bi bi-speedometer2 me-2 text-warning"></i>Top Tables by Rows</h6>
+                </div>
+                <div class="card-body">
+                    <div id="topTablesByRows" class="small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recordPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-secondary border-opacity-25">
+                <div>
+                    <h5 class="modal-title mb-1" id="previewTitle">Record Details</h5>
+                    <small class="text-muted" id="previewSubtitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle" id="previewTable"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const payload = {{ records_payload|tojson }};
+const datasets = payload.datasets || [];
+const categoryOrder = payload.filters.categories || [];
+let activeCategory = "all";
+let filteredData = [...datasets];
+let categoryChartRef = null;
+
+const categoryLabels = {
+    "year-wise": "Year Wise",
+    "team-wise": "Team Wise",
+    "player-wise": "Player Wise",
+    "batting": "Batting",
+    "bowling": "Bowling",
+    "keeping": "Keeping",
+    "other": "Other"
+};
+
+function fmtCategory(category) {
+    return categoryLabels[category] || category;
+}
+
+function renderFilterOptions() {
+    const yearFilter = document.getElementById("yearFilter");
+    const teamFilter = document.getElementById("teamFilter");
+    const playerFilter = document.getElementById("playerFilter");
+
+    (payload.filters.years || []).forEach(year => {
+        yearFilter.insertAdjacentHTML("beforeend", `<option value="${year}">${year}</option>`);
+    });
+    (payload.filters.teams || []).forEach(team => {
+        teamFilter.insertAdjacentHTML("beforeend", `<option value="${team}">${team}</option>`);
+    });
+    (payload.filters.players || []).forEach(player => {
+        playerFilter.insertAdjacentHTML("beforeend", `<option value="${player}">${player}</option>`);
+    });
+}
+
+function renderCategoryTabs() {
+    const tabs = document.getElementById("categoryTabs");
+    const counts = payload.summary.category_counts || {};
+    const allCount = datasets.length;
+
+    const baseButton = (key, label, count) => `
+        <button class="btn ${activeCategory === key ? 'btn-primary' : 'btn-outline-secondary'} category-tab-btn"
+                data-category="${key}">
+            ${label} <span class="badge bg-dark bg-opacity-50 ms-1">${count || 0}</span>
+        </button>
+    `;
+
+    tabs.innerHTML = baseButton("all", "All", allCount)
+        + categoryOrder.map(cat => baseButton(cat, fmtCategory(cat), counts[cat] || 0)).join("");
+
+    tabs.querySelectorAll(".category-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            activeCategory = btn.dataset.category;
+            renderCategoryTabs();
+            applyFilters();
+        });
+    });
+}
+
+function datasetTextBlob(ds) {
+    const rowText = (ds.rows || []).map(row => Object.values(row).join(" ")).join(" ");
+    return `${ds.title || ""} ${ds.page_title || ""} ${rowText}`.toLowerCase();
+}
+
+function applyFilters() {
+    const searchText = (document.getElementById("recordsSearchInput").value || "").trim().toLowerCase();
+    const year = (document.getElementById("yearFilter").value || "").trim().toLowerCase();
+    const team = (document.getElementById("teamFilter").value || "").trim().toLowerCase();
+    const player = (document.getElementById("playerFilter").value || "").trim().toLowerCase();
+
+    filteredData = datasets.filter(ds => {
+        if (activeCategory !== "all" && ds.category !== activeCategory) {
+            return false;
+        }
+
+        const blob = datasetTextBlob(ds);
+        if (searchText && !blob.includes(searchText)) {
+            return false;
+        }
+        if (year && !blob.includes(year)) {
+            return false;
+        }
+        if (team && !blob.includes(team)) {
+            return false;
+        }
+        if (player && !blob.includes(player)) {
+            return false;
+        }
+        return true;
+    });
+
+    renderResults();
+    renderStats();
+    renderCharts();
+}
+
+function renderResults() {
+    const recordsList = document.getElementById("recordsList");
+    const emptyState = document.getElementById("emptyState");
+    const meta = document.getElementById("recordsResultsMeta");
+
+    meta.textContent = `${filteredData.length} table(s) found. Showing records computed from kaggle dataset with full-row previews.`;
+
+    if (!filteredData.length) {
+        recordsList.innerHTML = "";
+        emptyState.classList.remove("d-none");
+        return;
+    }
+
+    emptyState.classList.add("d-none");
+    recordsList.innerHTML = filteredData.map((ds, index) => {
+        const delay = Math.min(12, index) * 40;
+        const safeRows = Number(ds.row_count || (ds.rows || []).length || 0);
+        const preview = (ds.rows || []).slice(0, 2).map(row => Object.values(row).join(" | ")).join("<br>");
+        return `
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 h-100 records-card animate-rise" style="animation-delay:${delay}ms;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary-subtle text-primary-emphasis">${fmtCategory(ds.category)}</span>
+                            <small class="text-muted">${safeRows} rows</small>
+                        </div>
+                        <h6 class="fw-bold mb-1">${ds.title}</h6>
+                        <p class="text-muted small mb-2">${ds.page_title}</p>
+                        <div class="small text-secondary mb-3">${preview || "Preview unavailable."}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-muted">Source: kaggle dataset</span>
+                            <button class="btn btn-sm btn-outline-info" onclick="openRecordPreview('${ds.id}')">
+                                <i class="bi bi-table me-1"></i>View Table
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderStats() {
+    document.getElementById("statFilteredTables").textContent = filteredData.length;
+    const ts = Number(payload.generated_at || 0) * 1000;
+    if (ts) {
+        document.getElementById("generatedAtLabel").textContent = new Date(ts).toLocaleString();
+    }
+}
+
+function renderCharts() {
+    const categoryCounts = {};
+    filteredData.forEach(ds => {
+        categoryCounts[ds.category] = (categoryCounts[ds.category] || 0) + 1;
+    });
+
+    const labels = categoryOrder.filter(cat => categoryCounts[cat]).map(fmtCategory);
+    const values = categoryOrder.filter(cat => categoryCounts[cat]).map(cat => categoryCounts[cat]);
+
+    const ctx = document.getElementById("recordsCategoryChart").getContext("2d");
+    if (categoryChartRef) {
+        categoryChartRef.destroy();
+    }
+
+    categoryChartRef = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "Tables",
+                data: values,
+                borderRadius: 8,
+                backgroundColor: [
+                    "rgba(78, 140, 255, 0.8)",
+                    "rgba(67, 211, 126, 0.8)",
+                    "rgba(249, 168, 37, 0.8)",
+                    "rgba(194, 96, 255, 0.8)",
+                    "rgba(255, 99, 132, 0.8)",
+                    "rgba(54, 162, 235, 0.8)",
+                    "rgba(201, 203, 207, 0.8)"
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            animation: { duration: 700 },
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } },
+                x: { ticks: { maxRotation: 25, minRotation: 0 } }
+            }
+        }
+    });
+
+    const topTables = [...filteredData]
+        .sort((a, b) => Number(b.row_count || 0) - Number(a.row_count || 0))
+        .slice(0, 7);
+    document.getElementById("topTablesByRows").innerHTML = topTables.length
+        ? topTables.map((ds, idx) => `
+            <div class="d-flex justify-content-between align-items-center py-2 ${idx < topTables.length - 1 ? 'border-bottom border-secondary border-opacity-25' : ''}">
+                <div class="pe-2">${idx + 1}. ${ds.title}</div>
+                <span class="badge bg-dark">${Number(ds.row_count || 0)}</span>
+            </div>
+        `).join("")
+        : `<p class="text-muted mb-0">No records available for selected filters.</p>`;
+}
+
+function openRecordPreview(recordId) {
+    const record = datasets.find(ds => ds.id === recordId);
+    if (!record) {
+        return;
+    }
+    document.getElementById("previewTitle").textContent = record.title || "Record Details";
+    document.getElementById("previewSubtitle").textContent = `${fmtCategory(record.category)} | ${record.page_title || ""}`;
+
+    const headers = record.headers && record.headers.length
+        ? record.headers
+        : (record.rows && record.rows.length ? Object.keys(record.rows[0]) : []);
+
+    const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>`;
+    const tbodyRows = (record.rows || []).map(row => {
+        return `<tr>${headers.map(h => `<td>${row[h] || ""}</td>`).join("")}</tr>`;
+    }).join("");
+    const tbody = `<tbody>${tbodyRows}</tbody>`;
+
+    document.getElementById("previewTable").innerHTML = `${thead}${tbody}`;
+    const modal = new bootstrap.Modal(document.getElementById("recordPreviewModal"));
+    modal.show();
+}
+
+function wireEvents() {
+    document.getElementById("recordsSearchInput").addEventListener("input", applyFilters);
+    document.getElementById("yearFilter").addEventListener("change", applyFilters);
+    document.getElementById("teamFilter").addEventListener("change", applyFilters);
+    document.getElementById("playerFilter").addEventListener("change", applyFilters);
+    document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+        document.getElementById("recordsSearchInput").value = "";
+        document.getElementById("yearFilter").value = "";
+        document.getElementById("teamFilter").value = "";
+        document.getElementById("playerFilter").value = "";
+        activeCategory = "all";
+        renderCategoryTabs();
+        applyFilters();
+    });
+}
+
+renderFilterOptions();
+renderCategoryTabs();
+wireEvents();
+applyFilters();
+</script>
+{% endblock %}
