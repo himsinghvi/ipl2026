@@ -1,8 +1,10 @@
 """IPL 2026 - AI/ML Prediction, Analytics & Dashboarding Web App."""
 import os
+import random
+import re
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from models import (db, Team, Player, Match, Scorecard, HeadToHead,
-                    FantasyUser, FantasyTeam, FantasyTeamPlayer)
+                    FantasyUser, FantasyTeam, FantasyTeamPlayer, UserPrediction)
 from seed_data import seed_database, calc_fantasy_points, seed_fantasy
 from predictor import (
     predict_win_probability,
@@ -12,19 +14,119 @@ from predictor import (
     get_match_analysis,
     get_recent_form,
 )
+from records_service import get_records_payload
 from datetime import datetime
+from datetime import timedelta
+from sqlalchemy import inspect, text
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ipl2026.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'ipl2026-secret-key'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
 db.init_app(app)
 
+
+def ensure_fantasy_auth_schema():
+    """Best-effort schema upgrades for auth fields on existing SQLite DBs."""
+    inspector = inspect(db.engine)
+    tables = set(inspector.get_table_names())
+    if 'fantasy_users' in tables:
+        columns = {col['name'] for col in inspector.get_columns('fantasy_users')}
+        alter_statements = []
+        if 'email' not in columns:
+            alter_statements.append("ALTER TABLE fantasy_users ADD COLUMN email VARCHAR(120)")
+        if 'mobile_number' not in columns:
+            alter_statements.append("ALTER TABLE fantasy_users ADD COLUMN mobile_number VARCHAR(20)")
+        if 'password_hash' not in columns:
+            alter_statements.append("ALTER TABLE fantasy_users ADD COLUMN password_hash VARCHAR(255)")
+        if 'last_login_at' not in columns:
+            alter_statements.append("ALTER TABLE fantasy_users ADD COLUMN last_login_at DATETIME")
+        for sql in alter_statements:
+            db.session.execute(text(sql))
+
+        # Unique indexes permit many NULL values and prevent duplicates for real signups.
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_fantasy_users_email ON fantasy_users(email)"
+        ))
+        db.session.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_fantasy_users_mobile_number ON fantasy_users(mobile_number)"
+        ))
+        db.session.commit()
+
+
+def current_fantasy_user():
+    user_id = session.get('fantasy_user_id')
+    if not user_id:
+        return None
+    user = db.session.get(FantasyUser, user_id)
+    if not user:
+        session.pop('fantasy_user_id', None)
+    return user
+
+
+def normalize_email(value):
+    return (value or '').strip().lower()
+
+
+def normalize_mobile(value):
+    return re.sub(r'\D', '', value or '')
+
+
+def valid_username(value):
+    return bool(re.fullmatch(r'[A-Za-z0-9_]{3,30}', value or ''))
+
+
+def valid_email(value):
+    return bool(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', value or ''))
+
+
+def valid_mobile(value):
+    return bool(re.fullmatch(r'\d{10,15}', value or ''))
+
+
+def get_safe_next_url(default_endpoint='fantasy'):
+    next_url = (request.form.get('next') or request.args.get('next') or '').strip()
+    if next_url.startswith('/') and not next_url.startswith('//'):
+        return next_url
+    return url_for(default_endpoint)
+
 with app.app_context():
     db.create_all()
+    ensure_fantasy_auth_schema()
     seed_database(app)
     seed_fantasy(app)
+
+
+@app.before_request
+def refresh_session():
+    if 'fantasy_user_id' in session:
+        session.permanent = True
+
+
+@app.context_processor
+def inject_auth_user():
+    user = current_fantasy_user()
+    account_predictions = []
+    account_fantasy_teams = []
+    if user:
+        account_predictions = (UserPrediction.query
+                               .filter_by(user_id=user.id)
+                               .order_by(UserPrediction.updated_at.desc())
+                               .limit(8)
+                               .all())
+        account_fantasy_teams = (FantasyTeam.query
+                                 .filter_by(user_id=user.id)
+                                 .order_by(FantasyTeam.created_at.desc())
+                                 .limit(8)
+                                 .all())
+    return {
+        'auth_user': user,
+        'account_predictions': account_predictions,
+        'account_fantasy_teams': account_fantasy_teams,
+    }
 
 
 @app.route('/')
@@ -174,6 +276,12 @@ def player_detail(player_id):
 @app.route('/predictions')
 def predictions():
     upcoming = Match.query.filter_by(status='upcoming').order_by(Match.date).all()
+    current_user = current_fantasy_user()
+    current_predictions = {}
+    if current_user:
+        saved_predictions = UserPrediction.query.filter_by(user_id=current_user.id).all()
+        current_predictions = {pred.match_id: pred for pred in saved_predictions}
+
     predictions_list = []
     for match in upcoming[:10]:
         team1 = db.session.get(Team, match.team1_id)
@@ -185,7 +293,21 @@ def predictions():
             'team2': team2,
             'prediction': pred,
         })
-    return render_template('predictions.html', predictions=predictions_list)
+    return render_template('predictions.html',
+                           predictions=predictions_list,
+                           current_user=current_user,
+                           current_predictions=current_predictions)
+
+
+@app.route('/records')
+def records():
+    force_refresh = request.args.get('refresh') == '1'
+    records_payload = get_records_payload(force_refresh=force_refresh)
+    return render_template(
+        'records.html',
+        records_payload=records_payload,
+        force_refresh=force_refresh,
+    )
 
 
 @app.route('/api/predict/<int:match_id>')
@@ -195,6 +317,50 @@ def api_predict(match_id):
     team2 = db.session.get(Team, match.team2_id)
     prediction = predict_win_probability(team1, team2)
     return jsonify(prediction)
+
+
+@app.route('/predictions/save', methods=['POST'])
+def save_prediction():
+    user = current_fantasy_user()
+    if not user:
+        flash('Please login to save your predictions.', 'danger')
+        return redirect(url_for('fantasy'))
+
+    match_id = request.form.get('match_id', type=int)
+    predicted_team_id = request.form.get('predicted_team_id', type=int)
+    confidence = request.form.get('confidence', type=int, default=50)
+
+    if not match_id or not predicted_team_id:
+        flash('Please choose a match and winner team.', 'danger')
+        return redirect(url_for('predictions'))
+
+    match = Match.query.get_or_404(match_id)
+    if match.status != 'upcoming':
+        flash('Predictions can only be updated for upcoming matches.', 'warning')
+        return redirect(url_for('predictions'))
+
+    if predicted_team_id not in (match.team1_id, match.team2_id):
+        flash('Invalid team selected for this match.', 'danger')
+        return redirect(url_for('predictions'))
+
+    confidence = max(0, min(100, confidence))
+
+    entry = UserPrediction.query.filter_by(user_id=user.id, match_id=match.id).first()
+    if entry:
+        entry.predicted_team_id = predicted_team_id
+        entry.confidence = confidence
+    else:
+        entry = UserPrediction(
+            user_id=user.id,
+            match_id=match.id,
+            predicted_team_id=predicted_team_id,
+            confidence=confidence,
+        )
+        db.session.add(entry)
+
+    db.session.commit()
+    flash('Prediction saved for your account.', 'success')
+    return redirect(url_for('predictions'))
 
 
 @app.route('/fantasy')
@@ -212,9 +378,7 @@ def fantasy():
         if top_team:
             match_winners[m.id] = top_team
 
-    current_user = None
-    if 'fantasy_user_id' in session:
-        current_user = db.session.get(FantasyUser, session['fantasy_user_id'])
+    current_user = current_fantasy_user()
 
     return render_template('fantasy.html',
                            leaderboard=leaderboard,
@@ -232,13 +396,11 @@ def fantasy_match(match_id):
     t1_players = Player.query.filter_by(team_id=team1.id).all()
     t2_players = Player.query.filter_by(team_id=team2.id).all()
 
-    current_user = None
+    current_user = current_fantasy_user()
     my_team = None
-    if 'fantasy_user_id' in session:
-        current_user = db.session.get(FantasyUser, session['fantasy_user_id'])
-        if current_user:
-            my_team = FantasyTeam.query.filter_by(
-                user_id=current_user.id, match_id=match_id).first()
+    if current_user:
+        my_team = FantasyTeam.query.filter_by(
+            user_id=current_user.id, match_id=match_id).first()
 
     match_leaderboard = (FantasyTeam.query
                          .filter_by(match_id=match_id)
@@ -259,46 +421,111 @@ def fantasy_match(match_id):
                            my_team=my_team)
 
 
+@app.route('/auth/signup', methods=['POST'])
+def auth_signup():
+    username = (request.form.get('username') or '').strip()
+    email = normalize_email(request.form.get('email'))
+    mobile_number = normalize_mobile(request.form.get('mobile_number'))
+    password = request.form.get('password') or ''
+    confirm_password = request.form.get('confirm_password') or ''
+
+    redirect_target = get_safe_next_url()
+
+    if not valid_username(username):
+        flash('Username must be 3-30 chars (letters, numbers, underscore only).', 'danger')
+        return redirect(redirect_target)
+    if not email and not mobile_number:
+        flash('Please provide at least one login option: email or mobile number.', 'danger')
+        return redirect(redirect_target)
+    if email and not valid_email(email):
+        flash('Please enter a valid email address.', 'danger')
+        return redirect(redirect_target)
+    if mobile_number and not valid_mobile(mobile_number):
+        flash('Mobile number must be 10-15 digits.', 'danger')
+        return redirect(redirect_target)
+    if len(password) < 8:
+        flash('Password must be at least 8 characters.', 'danger')
+        return redirect(redirect_target)
+    if password != confirm_password:
+        flash('Passwords do not match.', 'danger')
+        return redirect(redirect_target)
+
+    if FantasyUser.query.filter_by(username=username).first():
+        flash('Username already taken. Please choose another username.', 'danger')
+        return redirect(redirect_target)
+    if email and FantasyUser.query.filter_by(email=email).first():
+        flash('Email is already registered. Please login.', 'danger')
+        return redirect(redirect_target)
+    if mobile_number and FantasyUser.query.filter_by(mobile_number=mobile_number).first():
+        flash('Mobile number is already registered. Please login.', 'danger')
+        return redirect(redirect_target)
+
+    emojis = ['🏏', '🏆', '⭐', '🎯', '💎', '🦁', '🐯', '🦅']
+    user = FantasyUser(
+        username=username,
+        email=email or None,
+        mobile_number=mobile_number or None,
+        password_hash=generate_password_hash(password),
+        avatar_emoji=random.choice(emojis),
+        last_login_at=datetime.utcnow(),
+    )
+    db.session.add(user)
+    db.session.commit()
+
+    session['fantasy_user_id'] = user.id
+    session.permanent = True
+    flash(f'Welcome to IPL Fantasy League, {username}!', 'success')
+    return redirect(redirect_target)
+
+
+@app.route('/auth/login', methods=['POST'])
+def auth_login():
+    identifier = (request.form.get('identifier') or '').strip()
+    password = request.form.get('password') or ''
+    redirect_target = get_safe_next_url()
+
+    if not identifier or not password:
+        flash('Please enter email/mobile and password.', 'danger')
+        return redirect(redirect_target)
+
+    normalized_email = normalize_email(identifier)
+    normalized_mobile = normalize_mobile(identifier)
+
+    user = FantasyUser.query.filter(
+        (FantasyUser.email == normalized_email) |
+        (FantasyUser.mobile_number == normalized_mobile) |
+        (FantasyUser.username == identifier)
+    ).first()
+    if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
+        flash('Invalid credentials. Please try again.', 'danger')
+        return redirect(redirect_target)
+
+    user.last_login_at = datetime.utcnow()
+    db.session.commit()
+    session['fantasy_user_id'] = user.id
+    session.permanent = True
+    flash(f'Welcome back, {user.username}!', 'success')
+    return redirect(redirect_target)
+
+
 @app.route('/fantasy/join', methods=['POST'])
 def fantasy_join():
-    username = request.form.get('username', '').strip()
-    if not username or len(username) < 3:
-        flash('Username must be at least 3 characters.', 'danger')
-        return redirect(url_for('fantasy'))
-
-    user = FantasyUser.query.filter_by(username=username).first()
-    if user:
-        session['fantasy_user_id'] = user.id
-        flash(f'Welcome back, {username}!', 'success')
-    else:
-        emojis = ['🏏', '🏆', '⭐', '🎯', '💎', '🦁', '🐯', '🦅']
-        import random
-        user = FantasyUser(username=username,
-                           avatar_emoji=random.choice(emojis))
-        db.session.add(user)
-        db.session.commit()
-        session['fantasy_user_id'] = user.id
-        flash(f'Welcome to IPL Fantasy League, {username}!', 'success')
-
-    return redirect(request.referrer or url_for('fantasy'))
+    flash('Username-only login is removed. Please use Signup/Login.', 'warning')
+    return redirect(url_for('fantasy'))
 
 
 @app.route('/fantasy/logout')
 def fantasy_logout():
     session.pop('fantasy_user_id', None)
     flash('Logged out of Fantasy League.', 'info')
-    return redirect(url_for('fantasy'))
+    return redirect(get_safe_next_url())
 
 
 @app.route('/fantasy/create-team', methods=['POST'])
 def fantasy_create_team():
-    if 'fantasy_user_id' not in session:
-        flash('Please join the Fantasy League first.', 'danger')
-        return redirect(url_for('fantasy'))
-
-    user = db.session.get(FantasyUser, session['fantasy_user_id'])
+    user = current_fantasy_user()
     if not user:
-        flash('User not found.', 'danger')
+        flash('Please login to the Fantasy League first.', 'danger')
         return redirect(url_for('fantasy'))
 
     match_id = request.form.get('match_id', type=int)

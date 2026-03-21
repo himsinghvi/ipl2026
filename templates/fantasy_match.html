@@ -3,20 +3,6 @@
 
 {% block content %}
 <div class="fantasy-page">
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="mb-3">
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-
     <!-- Match Header -->
     <div class="card border-0 mb-4 overflow-hidden">
         <div class="card-body p-4">
@@ -260,7 +246,7 @@
                 <div class="card-body text-center py-5">
                     <i class="bi bi-person-plus fs-1 d-block mb-3 text-muted"></i>
                     <h5>Join the Fantasy League to create your team</h5>
-                    <p class="text-muted mb-3">Enter a username on the <a href="{{ url_for('fantasy') }}">Fantasy League</a> page to get started.</p>
+                    <p class="text-muted mb-3">Signup/Login on the <a href="{{ url_for('fantasy') }}">Fantasy League</a> page to continue.</p>
                     <a href="{{ url_for('fantasy') }}" class="btn btn-fantasy">
                         <i class="bi bi-rocket-takeoff me-1"></i>Join Now
                     </a>

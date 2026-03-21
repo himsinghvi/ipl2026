@@ -5,13 +5,24 @@
 <div class="text-center mb-4">
     <h2 class="fw-bold"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>AI Match Predictions</h2>
     <p class="text-muted">ML-powered win probabilities for upcoming IPL 2026 matches</p>
+    <button class="btn btn-sm btn-outline-info mb-2"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#predictionsHelpModal">
+        <i class="bi bi-question-circle me-1"></i>How To & FAQs
+    </button>
+    {% if current_user %}
+    <small class="text-muted">Signed in as <strong>{{ current_user.username }}</strong> &middot; Save your own picks below.</small>
+    {% else %}
+    <small class="text-muted">Use the <strong>Account</strong> tab in the top navbar to login/signup and save your personal predictions.</small>
+    {% endif %}
 </div>
 
 {% if predictions %}
 <div class="row g-4">
     {% for item in predictions %}
     <div class="col-md-6 col-lg-4">
-        <a href="/match/{{ item.match.id }}" class="card border-0 shadow-sm h-100 text-decoration-none prediction-card">
+        <div class="card border-0 shadow-sm h-100 prediction-card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="badge bg-info bg-opacity-25 text-info">Match {{ item.match.match_number }}</span>
@@ -62,8 +73,41 @@
                 <div class="text-center mt-2">
                     <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ item.match.city }}</small>
                 </div>
+                <div class="text-center mt-2">
+                    <a href="/match/{{ item.match.id }}" class="btn btn-sm btn-outline-secondary">Match details</a>
+                </div>
+
+                {% if current_user %}
+                {% set my_pick = current_predictions.get(item.match.id) %}
+                <form action="{{ url_for('save_prediction') }}" method="POST" class="mt-3 pt-3 border-top border-secondary">
+                    <input type="hidden" name="match_id" value="{{ item.match.id }}">
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <select class="form-select form-select-sm" name="predicted_team_id" required>
+                                <option value="" {% if not my_pick %}selected{% endif %}>Pick winner</option>
+                                <option value="{{ item.team1.id }}" {% if my_pick and my_pick.predicted_team_id == item.team1.id %}selected{% endif %}>
+                                    {{ item.team1.short_name }}
+                                </option>
+                                <option value="{{ item.team2.id }}" {% if my_pick and my_pick.predicted_team_id == item.team2.id %}selected{% endif %}>
+                                    {{ item.team2.short_name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <input type="number" class="form-control form-control-sm" name="confidence"
+                                   min="0" max="100" value="{{ my_pick.confidence if my_pick else 50 }}"
+                                   title="Confidence %">
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-save me-1"></i>{{ 'Update My Pick' if my_pick else 'Save My Pick' }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
             </div>
-        </a>
+        </div>
     </div>
     {% endfor %}
 </div>
@@ -73,5 +117,48 @@
     <h5 class="text-muted mt-3">No upcoming matches to predict</h5>
 </div>
 {% endif %}
+
+<div class="modal fade" id="predictionsHelpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-secondary border-opacity-25">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2 text-info"></i>Predictions: How To & FAQs
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="fw-bold">How To Use Predictions Page</h6>
+                <ol class="small text-muted">
+                    <li>Review each upcoming match card and compare both team win percentages.</li>
+                    <li>Use the win-probability bar and favored team badge for quick interpretation.</li>
+                    <li>Open <strong>Match details</strong> for deeper team and player context.</li>
+                    <li>When logged in, pick your winner, set confidence (0-100), and click <strong>Save My Pick</strong>.</li>
+                    <li>If you already saved a pick, update it anytime before match start using <strong>Update My Pick</strong>.</li>
+                </ol>
+
+                <hr class="border-secondary border-opacity-25">
+
+                <h6 class="fw-bold">FAQs</h6>
+                <div class="small">
+                    <p class="mb-2"><strong>Q: Why can I not save picks?</strong><br>
+                    A: You must be logged in from the Account panel and the match must be upcoming.</p>
+
+                    <p class="mb-2"><strong>Q: What does confidence mean?</strong><br>
+                    A: It is your own confidence score (0-100) for your selected winner. It does not change model output.</p>
+
+                    <p class="mb-2"><strong>Q: Can I change my prediction later?</strong><br>
+                    A: Yes. Saving again on the same match updates your existing pick.</p>
+
+                    <p class="mb-2"><strong>Q: Why do probabilities not reach 100/0?</strong><br>
+                    A: The model clamps outcomes to a realistic range, so extreme outputs are avoided.</p>
+
+                    <p class="mb-0"><strong>Q: Are these betting odds?</strong><br>
+                    A: No. These are heuristic analytics predictions generated from weighted team factors.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
