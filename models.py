@@ -129,10 +129,14 @@ class FantasyUser(db.Model):
     __tablename__ = 'fantasy_users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    mobile_number = db.Column(db.String(20), unique=True, nullable=True)
+    password_hash = db.Column(db.String(255), nullable=True)
     avatar_emoji = db.Column(db.String(10), default='🏏')
     total_points = db.Column(db.Integer, default=0)
     matches_played = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login_at = db.Column(db.DateTime, nullable=True)
     teams = db.relationship('FantasyTeam', backref='user', lazy=True)
 
 
@@ -161,3 +165,22 @@ class FantasyTeamPlayer(db.Model):
     is_vice_captain = db.Column(db.Boolean, default=False)
     points = db.Column(db.Integer, default=0)
     player = db.relationship('Player', foreign_keys=[player_id])
+
+
+class UserPrediction(db.Model):
+    __tablename__ = 'user_predictions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('fantasy_users.id'), nullable=False)
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=False)
+    predicted_team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
+    confidence = db.Column(db.Integer, default=50)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('FantasyUser', foreign_keys=[user_id])
+    match = db.relationship('Match', foreign_keys=[match_id])
+    predicted_team = db.relationship('Team', foreign_keys=[predicted_team_id])
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'match_id', name='uq_user_prediction_match'),
+    )
